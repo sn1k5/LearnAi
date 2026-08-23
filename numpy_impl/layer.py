@@ -27,12 +27,12 @@ class layer:
         std = np.sqrt(2.0 / input_size)
         self.W = np.random.randn(input_size, output_size) * std
         self.B = np.zeros(output_size)
-        self.X = np.zeros((input_size, 1))
+        self.X = np.zeros(input_size)
         self.Z = np.zeros(output_size)
         self.derivative_activation = np.zeros(output_size)
         self.dW = np.zeros((input_size, output_size))
         self.dB = np.zeros(output_size)
-        self.dX = np.zeros((input_size, 1))
+        self.dX = np.zeros(input_size)
         # momentum 速度项（与 W/B 同形），跨 batch/epoch 保留
         self.vW = np.zeros((input_size, output_size))
         self.vB = np.zeros(output_size)
@@ -46,8 +46,9 @@ class layer:
 
     # ------------------------- 前向 -------------------------
     def forward(self, X):
-        self.X = X
-        self.Z = X @ self.W + self.B
+        # 输入统一为 1D [input_size]，Z 与输出均保持 1D [output_size]
+        self.X = np.asarray(X).reshape(self.input_size)
+        self.Z = self.X @ self.W + self.B
         if self.is_output:
             return self._softmax(self.Z)
         self._save_derivative_activation(self.Z)
@@ -58,11 +59,12 @@ class layer:
         # 输出层：delta 已是 softmax 输入处的梯度，不再乘激活导数
         if not self.is_output:
             delta = delta * self.derivative_activation
-        # 更新 B 梯度
+        # 更新 B 梯度（delta 为 1D [output]）
         self.dB = self.dB + delta if accumulate else delta
-        # 更新 W 梯度
-        self.dW = self.dW + (self.X.T @ delta) if accumulate else (self.X.T @ delta)
-        # 回传梯度给前一层
+        # 更新 W 梯度：X[input] 与 delta[output] 的外积 -> [input, output]
+        dW = np.outer(self.X, delta)
+        self.dW = self.dW + dW if accumulate else dW
+        # 回传梯度给前一层：W[input,output] @ delta[output] = [input]
         self.dX = self.W @ delta
         return self.dX
 

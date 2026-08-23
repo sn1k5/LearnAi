@@ -35,7 +35,7 @@ class network:
             out = l.forward(out)
         return out
 
-    def train_step(self, x, y_true, lr=0.001, accumulate=, update=True, momentum=0.0):
+    def train_step(self, x, y_true, lr=0.001, accumulate=False, update=True, momentum=0.0):
         """单次前向 + 反向 + （可选）参数更新，返回损失。"""
         pred = self.predict(x)
         loss = cross_entropy_loss(pred, y_true)
@@ -97,7 +97,7 @@ class network:
         return history
 
     def evaluate(self, x_data, y_data):
-        """返回 (平均损失, 准确率)。"""
+        """返回 (平均损失, 准确率)。pred / y_true 均按 1D [output] 处理。"""
         total_loss = 0.0
         correct = 0
         for x, y_true in zip(x_data, y_data):
