@@ -16,3 +16,6 @@ env/
 # 系统文件
 .DS_Store
 Thumbs.db
+
+# MNIST 数据集（由 data/download_mnist.py 下载，不纳入版本库）
+data/*.ubyte
