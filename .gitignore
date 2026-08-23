@@ -19,3 +19,10 @@ Thumbs.db
 
 # MNIST 数据集（由 data/download_mnist.py 下载，不纳入版本库）
 data/*.ubyte
+
+# 本地依赖与缓存（pip --target 安装目录 / matplotlib 配置缓存）
+.libs/
+.mplcache/
+
+# 运行产物
+numpy_impl_mnist_samples.png

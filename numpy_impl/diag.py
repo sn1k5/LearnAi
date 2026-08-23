@@ -2,8 +2,6 @@
 
 本模块只做『只读诊断』，不修改任何参数。所有函数接收 layer 实例，
 返回标量 / 比例 / dict。
-
-注：dead_ratio_over_batch（基于整批样本统计）按要求保持骨架，未在此实现。
 """
 
 import numpy as np
@@ -16,6 +14,25 @@ def dead_neuron_ratio(layer):
     z = np.asarray(layer.Z).ravel()
     dead = np.sum(z <= 0)
     return float(dead) / len(z)
+
+
+def dead_ratio_over_batch(layer, x_list):
+    """诊断：基于一批样本统计【整体/永久死亡】比例。
+
+    对每个神经元统计整批样本中 z<=0 的次数；若整批一次都没激活，
+    视为『永久死亡』。返回永久死亡神经元占比（0 健康，接近 1 训练停滞）。
+    """
+    if layer.is_output:
+        return None
+    X = np.asarray(x_list)                      # [n, input_size]
+    if X.ndim == 1:                             # 单样本容错
+        X = X.reshape(1, -1)
+    n = X.shape[0]
+    if n == 0:
+        return 0.0
+    Z = X @ layer.W + layer.B                   # [n, output_size]
+    dead_count = np.sum(Z <= 0, axis=0)         # 每个神经元不激活的样本数
+    return float(np.sum(dead_count == n)) / layer.output_size
 
 
 def weight_norm(layer):
