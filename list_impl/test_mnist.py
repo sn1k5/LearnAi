@@ -21,14 +21,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # 将项目根加入 sys.path，使 `from list_impl.network import ...` 可解析
-PROJECT_ROOT = "c:/Users/Administrator/Desktop/Code/Proj/Ai/myMLP"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from list_impl.network import network  # 复用 list 版手写 MLP 框架
 
-# ------------------------- 路径配置（写死绝对路径） -------------------------
-DATA_DIR = "c:/Users/Administrator/Desktop/Code/Proj/Ai/myMLP/data"
+# ------------------------- 路径配置（相对项目根） -------------------------
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 TRAIN_IMAGES = os.path.join(DATA_DIR, "train-images-idx3-ubyte")
 TRAIN_LABELS = os.path.join(DATA_DIR, "train-labels-idx1-ubyte")
 TEST_IMAGES = os.path.join(DATA_DIR, "t10k-images-idx3-ubyte")

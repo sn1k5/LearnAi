@@ -14,9 +14,10 @@ import numpy as np
 
 from .layer import layer
 from .loss import cross_entropy_grad, cross_entropy_loss
+from .saveable import _SaveableMixin
 
 
-class network:
+class network(_SaveableMixin):
     def __init__(self, input_size, output_size, hidden_shape, print_diag=True):
         self.input_size = input_size
         self.output_size = output_size
@@ -32,6 +33,10 @@ class network:
         # 末尾补一个输出层（softmax），接在最后一个隐藏层之后
         self.layers.append(layer(prev, output_size, is_output=True))
 
+    def _build_from_shapes(self, layer_shapes):
+        """依据 (input_size, output_size, is_output) 元组列表重建层（标准 layer 约定）。"""
+        self.layers = [layer(*shape) for shape in layer_shapes]
+
     def predict(self, X):
         out = X
         for l in self.layers:
@@ -44,18 +49,21 @@ class network:
         loss = cross_entropy_loss(pred, Y_true)
         grad = cross_entropy_grad(pred, Y_true)
         # 反向传播
-        for l in self.layers:
+        for l in reversed(self.layers):
             grad = l.backward(grad, accumulate) # accumulate: 是否要梯度累加
         return loss
 
-    def train(self, X_date, Y_data, lr = 0.05, momentum = 0.8, 
-             epochs, batch_size = 5, lr_decay = 0.98, seed = 42,
-             X_val = None, Y_val = None, eval_every = 2):
+    def train(self, X_data, Y_data, lr = 0.05, momentum = 0.8,
+             epochs = 10, batch_size = 5, lr_decay = 0.98, seed = 42,
+             X_val = None, Y_val = None, eval_every = 2,
+             monitor = "val_acc", save_best = None, early_stop = None):
         if seed is not None:
             random.seed(seed)
 
         history = []
+        state = self._begin_monitor(monitor)
         n = len(X_data)
+        stopped = False
         for epoch in range(epochs):
             idx = list(range(n))
             random.shuffle(idx)
@@ -81,9 +89,23 @@ class network:
             if X_val is not None and Y_val is not None and (epoch + 1) % eval_every == 0:
                 eval_loss, acc = self.evaluate(X_val, Y_val)
                 msg += f"eval_loss = {eval_loss:.6f} val_acc = {acc:.4f}"
+                improved = self._maybe_checkpoint(
+                    state, epoch, eval_loss, acc, save_best, save_best
+                )
+                if improved:
+                    msg += "  [saved best]"
+                msg += self._monitor_summary(state)
+                if self._should_early_stop(state, epoch, early_stop):
+                    msg += f"  early_stop: best {state['monitor']} 连续 {state['no_improve']} 轮无改善"
+                    print(msg)
+                    stopped = True
+                    break
             print(msg)
             lr *= lr_decay
 
+        if stopped:
+            print(f">>> 早停触发，最优模型来自 epoch {state['best_epoch'] + 1}"
+                  + (f"，已存于 {state['best_path']}" if state['best_path'] else ""))
         return history
 
     def evaluate(self, X_val, Y_val):

@@ -20,15 +20,15 @@ import sys
 
 import numpy as np
 
-# 将项目根加入 sys.path，使 `from numpy_impl.network_batch import ...` 可解析
-PROJECT_ROOT = "c:/Users/Administrator/Desktop/Code/Proj/Ai/myMLP"
+# 项目根：本文件位于 <root>/numpy_impl/，故根目录为 __file__ 的父级的父级
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from numpy_impl.network_batch import network_batch
 
-# ------------------------- 路径配置（与现有脚本一致） -------------------------
-DATA_DIR = "c:/Users/Administrator/Desktop/Code/Proj/Ai/myMLP/data"
+# ------------------------- 路径配置（相对项目根，与现有脚本一致） -------------------------
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 TRAIN_IMAGES = os.path.join(DATA_DIR, "train-images-idx3-ubyte")
 TRAIN_LABELS = os.path.join(DATA_DIR, "train-labels-idx1-ubyte")
 TEST_IMAGES = os.path.join(DATA_DIR, "t10k-images-idx3-ubyte")
@@ -62,6 +62,12 @@ def preprocess(x, y, num_classes=10):
     return x_norm, y_onehot
 
 
+# ------------------------- 路径配置（模型保存） -------------------------
+MODEL_DIR = os.path.join(PROJECT_ROOT, "numpy_impl", "checkpoints")
+BEST_MODEL = os.path.join(MODEL_DIR, "mnist_best.npz")
+FINAL_MODEL = os.path.join(MODEL_DIR, "mnist_final.npz")
+
+
 # ------------------------- 3. 训练与测试（批次版） -------------------------
 def main():
     # 1) 加载并解析数据
@@ -90,13 +96,26 @@ def main():
     print(">> 开始批次训练（batch_size=32, lr=0.005, momentum=0.9）...")
     net.train(x_tr, y_tr, epochs=10, lr=0.005,
               batch_size=32, momentum=0.9,
-              x_val=x_val, y_val=y_val, eval_every=1)
+              x_val=x_val, y_val=y_val, eval_every=1,
+              save_best=BEST_MODEL)   # 验证指标刷新时自动保存最优模型
 
-    # 5) 测试集评估
+    # 5) 测试集评估（训练态模型）
     test_loss, test_acc = net.evaluate(x_test, y_test)
     print("=" * 50)
     print(f"测试集 平均损失 = {test_loss:.6f}, 准确率 = {test_acc:.4f}")
     print("=" * 50)
+
+    # 6) 保存最终模型
+    saved = net.save(FINAL_MODEL)
+    print(f">> 已保存最终模型: {saved}")
+
+    # 7) 重新加载，验证“保存/加载”一致（应与原模型评估一致）
+    net2 = network_batch.load(FINAL_MODEL)
+    loss2, acc2 = net2.evaluate(x_test, y_test)
+    print(f">> 重新加载模型评估: 平均损失 = {loss2:.6f}, 准确率 = {acc2:.4f}")
+    assert abs(loss2 - test_loss) < 1e-9 and abs(acc2 - test_acc) < 1e-9, \
+        "保存/加载后结果不一致！"
+    print(">> 保存/加载一致性校验通过")
 
 
 if __name__ == "__main__":

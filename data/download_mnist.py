@@ -14,7 +14,7 @@ import os
 import urllib.request
 
 # 基于脚本所在目录解析默认数据目录，避免依赖当前工作目录 (cwd)
-_SCRIPT_DIR = os.path.abspath(__file__)
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _DEFAULT_DATA_DIR = os.path.join(_SCRIPT_DIR, "data")
 
 # 官方下载源（LeCun 维护的镜像）

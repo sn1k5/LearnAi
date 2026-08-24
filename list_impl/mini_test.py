@@ -11,21 +11,21 @@ import sys
 import numpy as np
 
 # 将项目根加入 sys.path，使 `from list_impl.network import ...` 可解析
-PROJECT_ROOT = "c:/Users/Administrator/Desktop/Code/Proj/Ai/myMLP"
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from list_impl.network import network
 
-# ------------------------- 路径配置（写死绝对路径） -------------------------
-DATA_DIR = "c:/Users/Administrator/Desktop/Code/Proj/Ai/myMLP/data"
+# ------------------------- 路径配置（相对项目根） -------------------------
+DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 TRAIN_IMAGES = os.path.join(DATA_DIR, "train-images-idx3-ubyte")
 TRAIN_LABELS = os.path.join(DATA_DIR, "train-labels-idx1-ubyte")
 TEST_IMAGES = os.path.join(DATA_DIR, "t10k-images-idx3-ubyte")
 TEST_LABELS = os.path.join(DATA_DIR, "t10k-labels-idx1-ubyte")
 
 # 模型权重文件随 list_impl 包一起存放
-MODEL_PATH = "c:/Users/Administrator/Desktop/Code/Proj/Ai/myMLP/list_impl/mlp_model.json"
+MODEL_PATH = os.path.join(PROJECT_ROOT, "list_impl", "mlp_model.json")
 
 
 def load_idx_images(path):
